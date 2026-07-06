@@ -45,8 +45,7 @@ def parse_args(input_args=None):
     parser.add_argument("--center_crop", action="store_true")
     parser.add_argument("--no_random_flip", action="store_true")
     parser.add_argument("--train_batch_size", type=int, default=4)
-    parser.add_argument("--num_train_epochs", type=int, default=1)
-    parser.add_argument("--max_train_steps", type=int, default=None)
+    parser.add_argument("--max_train_steps", type=int, required=True)
     parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
     parser.add_argument("--gradient_checkpointing", action="store_true")
     parser.add_argument("--learning_rate", type=float, default=5e-5)
@@ -334,11 +333,11 @@ def main(args):
             "The training dataloader is empty. Reduce --train_batch_size or add more paired training images."
         )
 
+    if args.max_train_steps <= 0:
+        raise ValueError("`--max_train_steps` must be a positive integer.")
+
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
-    overrode_max_train_steps = False
-    if args.max_train_steps is None:
-        args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
-        overrode_max_train_steps = True
+    args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
 
     lr_scheduler = get_scheduler(
         args.lr_scheduler,
@@ -367,8 +366,6 @@ def main(args):
     vae.to(accelerator.device, dtype=weight_dtype)
 
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
-    if overrode_max_train_steps:
-        args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
     args.num_train_epochs = math.ceil(args.max_train_steps / num_update_steps_per_epoch)
 
     if accelerator.is_main_process and log_with is not None:
@@ -406,7 +403,7 @@ def main(args):
             accelerator.print(f"Resuming from checkpoint {path}")
             accelerator.load_state(os.path.join(args.output_dir, path))
             global_step = int(path.split("-")[1])
-            initial_global_step = global_step * args.gradient_accumulation_steps
+            initial_global_step = global_step
             first_epoch = global_step // num_update_steps_per_epoch
 
     progress_bar = tqdm(

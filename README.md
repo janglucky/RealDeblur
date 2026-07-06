@@ -81,6 +81,7 @@ TRAIN_SHARP_DIR=/home/gd09385/data/test_c_sub/target \
 OUTPUT_DIR=experiments/deblur_baseline \
 TRAIN_BATCH_SIZE=1 \
 GRADIENT_ACCUMULATION_STEPS=4 \
+MAX_TRAIN_STEPS=20000 \
 bash train_deblur_baseline.sh
 ```
 
@@ -89,6 +90,7 @@ Useful options:
 - `DISABLE_CUDNN=1` disables cuDNN. Keep this on if the machine reports `CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH`.
 - `GRADIENT_CHECKPOINTING=1` reduces VRAM usage.
 - `USE_8BIT_ADAM=1` enables bitsandbytes AdamW if bitsandbytes is installed.
+- `MAX_TRAIN_STEPS=20000` sets the total number of optimizer steps. The script derives the required epoch count from this value.
 - `CHECKPOINTING_STEPS=5000` controls checkpoint frequency.
 - `REPORT_TO=tensorboard` enables TensorBoard logging if TensorBoard is installed. The default is `none`.
 

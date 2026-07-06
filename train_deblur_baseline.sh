@@ -9,7 +9,7 @@ set -e
 : "${LEARNING_RATE:=5e-5}"
 : "${GRADIENT_ACCUMULATION_STEPS:=4}"
 : "${TRAIN_BATCH_SIZE:=1}"
-: "${NUM_TRAIN_EPOCHS:=1000}"
+: "${MAX_TRAIN_STEPS:=20000}"
 : "${CHECKPOINTING_STEPS:=5000}"
 : "${MIXED_PRECISION:=fp16}"
 : "${DATALOADER_NUM_WORKERS:=8}"
@@ -38,7 +38,7 @@ accelerate launch train_deblur_baseline.py \
   --learning_rate="${LEARNING_RATE}" \
   --gradient_accumulation_steps="${GRADIENT_ACCUMULATION_STEPS}" \
   --train_batch_size="${TRAIN_BATCH_SIZE}" \
-  --num_train_epochs="${NUM_TRAIN_EPOCHS}" \
+  --max_train_steps="${MAX_TRAIN_STEPS}" \
   --tracker_project_name="deblur_baseline" \
   --enable_xformers_memory_efficient_attention \
   --checkpointing_steps="${CHECKPOINTING_STEPS}" \
