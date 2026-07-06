@@ -3,8 +3,8 @@ set -e
 
 : "${IMAGE_PATH:=/home/gd09385/data/test_c/source}"
 : "${PRETRAINED_MODEL:=/home/gd09385/models/stable-diffusion-2-base}"
-: "${PASD_MODEL:=experiments/pasd_deblur_no_text/checkpoint-10000}"
-: "${OUTPUT_DIR:=outputs/pasd_deblur_no_text}"
+: "${PASD_MODEL:=experiments/deblur_baseline/checkpoint-10000}"
+: "${OUTPUT_DIR:=outputs/deblur_baseline}"
 : "${MIXED_PRECISION:=fp16}"
 : "${NUM_INFERENCE_STEPS:=20}"
 : "${CONDITIONING_SCALE:=1.0}"
@@ -43,7 +43,7 @@ if [ -n "${SEED}" ]; then
   EXTRA_ARGS+=(--seed "${SEED}")
 fi
 
-python test_deblur_no_text.py \
+python test_deblur_baseline.py \
   --pretrained_model_path="${PRETRAINED_MODEL}" \
   --pasd_model_path="${PASD_MODEL}" \
   --image_path="${IMAGE_PATH}" \

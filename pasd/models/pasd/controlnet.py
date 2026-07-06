@@ -76,7 +76,7 @@ class ControlNetConditioningEmbedding(nn.Module):
 
         self.use_rrdb = False
         if use_rrdb:
-            logger.warning("RRDB conditioning is not included in the no-text deblurring baseline; using conv blocks.")
+            logger.warning("RRDB conditioning is not included in the deblurring baseline; using conv blocks.")
 
         self.conv_in = nn.Conv2d(conditioning_channels, block_out_channels[0], kernel_size=3, padding=1)
 

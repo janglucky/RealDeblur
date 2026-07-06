@@ -4,7 +4,7 @@ set -e
 : "${TRAIN_BLUR_DIR:=/home/gd09385/data/test_c_sub/source}"
 : "${TRAIN_SHARP_DIR:=/home/gd09385/data/test_c_sub/target}"
 : "${PRETRAINED_MODEL:=/home/gd09385/models/stable-diffusion-2-base}"
-: "${OUTPUT_DIR:=experiments/pasd_deblur_no_text}"
+: "${OUTPUT_DIR:=experiments/deblur_baseline}"
 : "${RESOLUTION:=512}"
 : "${LEARNING_RATE:=5e-5}"
 : "${GRADIENT_ACCUMULATION_STEPS:=4}"
@@ -29,7 +29,7 @@ if [ "${USE_8BIT_ADAM}" = "1" ]; then
   EXTRA_ARGS+=(--use_8bit_adam)
 fi
 
-accelerate launch train_deblur_no_text.py \
+accelerate launch train_deblur_baseline.py \
   --pretrained_model_name_or_path="${PRETRAINED_MODEL}" \
   --train_blur_dir="${TRAIN_BLUR_DIR}" \
   --train_sharp_dir="${TRAIN_SHARP_DIR}" \
@@ -39,7 +39,7 @@ accelerate launch train_deblur_no_text.py \
   --gradient_accumulation_steps="${GRADIENT_ACCUMULATION_STEPS}" \
   --train_batch_size="${TRAIN_BATCH_SIZE}" \
   --num_train_epochs="${NUM_TRAIN_EPOCHS}" \
-  --tracker_project_name="pasd_deblur_no_text" \
+  --tracker_project_name="deblur_baseline" \
   --enable_xformers_memory_efficient_attention \
   --checkpointing_steps="${CHECKPOINTING_STEPS}" \
   --mixed_precision="${MIXED_PRECISION}" \

@@ -6,7 +6,7 @@ RealDeblur is a paired image deblurring baseline derived from PASD. This reposit
 
 This codebase is focused on one task:
 
-- train a no-text PASD-style model on paired blurry/sharp images
+- train a PASD-style deblurring baseline on paired blurry/sharp images
 - run inference on blurry images with the trained UNet and ControlNet weights
 
 Removed from this baseline:
@@ -69,7 +69,7 @@ Supported image extensions: `.jpg`, `.jpeg`, `.png`, `.bmp`, `.webp`, `.tif`, `.
 The included script is configured for the current machine paths:
 
 ```bash
-bash train_deblur_no_text.sh
+bash train_deblur_baseline.sh
 ```
 
 Common overrides:
@@ -78,10 +78,10 @@ Common overrides:
 PRETRAINED_MODEL=/home/gd09385/models/stable-diffusion-2-base \
 TRAIN_BLUR_DIR=/home/gd09385/data/test_c_sub/source \
 TRAIN_SHARP_DIR=/home/gd09385/data/test_c_sub/target \
-OUTPUT_DIR=experiments/pasd_deblur_no_text \
+OUTPUT_DIR=experiments/deblur_baseline \
 TRAIN_BATCH_SIZE=1 \
 GRADIENT_ACCUMULATION_STEPS=4 \
-bash train_deblur_no_text.sh
+bash train_deblur_baseline.sh
 ```
 
 Useful options:
@@ -99,18 +99,18 @@ Checkpoints are written under `experiments/` by default and are ignored by git.
 Run inference after a checkpoint has `unet/` and `controlnet/` subdirectories:
 
 ```bash
-bash test_deblur_no_text.sh
+bash test_deblur_baseline.sh
 ```
 
 Example with explicit paths:
 
 ```bash
 PRETRAINED_MODEL=/home/gd09385/models/stable-diffusion-2-base \
-PASD_MODEL=experiments/pasd_deblur_no_text/checkpoint-10000 \
+PASD_MODEL=experiments/deblur_baseline/checkpoint-10000 \
 IMAGE_PATH=/home/gd09385/data/test_c/source \
-OUTPUT_DIR=outputs/pasd_deblur_no_text \
+OUTPUT_DIR=outputs/deblur_baseline \
 MAX_IMAGES=5 \
-bash test_deblur_no_text.sh
+bash test_deblur_baseline.sh
 ```
 
 Testing has a startup free-VRAM check. The default is `MIN_FREE_VRAM_MB=8000`; lower it only if you know the checkpoint and image size fit your GPU.
@@ -123,8 +123,8 @@ Testing has a startup free-VRAM check. The default is `MIN_FREE_VRAM_MB=8000`; l
 
 ## Main Files
 
-- `train_deblur_no_text.py`: paired deblurring training
-- `test_deblur_no_text.py`: no-text deblurring inference
+- `train_deblur_baseline.py`: paired deblurring training
+- `test_deblur_baseline.py`: deblurring baseline inference
 - `pasd/dataloader/deblur.py`: paired blur/sharp dataset
-- `pasd/pipelines/pipeline_pasd.py`: no-text SD + ControlNet pipeline
+- `pasd/pipelines/pipeline_pasd.py`: text-branch-removed SD + ControlNet pipeline
 - `pasd/myutils/null_condition.py`: zero cross-attention condition helper

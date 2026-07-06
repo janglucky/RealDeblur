@@ -38,7 +38,7 @@ def parse_args(input_args=None):
     parser.add_argument("--revision", type=str, default=None)
     parser.add_argument("--train_blur_dir", type=str, required=True)
     parser.add_argument("--train_sharp_dir", type=str, required=True)
-    parser.add_argument("--output_dir", type=str, default="runs/pasd_deblur_no_text")
+    parser.add_argument("--output_dir", type=str, default="runs/deblur_baseline")
     parser.add_argument("--logging_dir", type=str, default="logs")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--resolution", type=int, default=512)
@@ -73,7 +73,7 @@ def parse_args(input_args=None):
     parser.add_argument("--mixed_precision", type=str, default="fp16", choices=["no", "fp16", "bf16"])
     parser.add_argument("--enable_xformers_memory_efficient_attention", action="store_true")
     parser.add_argument("--set_grads_to_none", action="store_true")
-    parser.add_argument("--tracker_project_name", type=str, default="pasd_deblur_no_text")
+    parser.add_argument("--tracker_project_name", type=str, default="deblur_baseline")
     parser.add_argument(
         "--trainable_modules",
         nargs="*",
@@ -125,7 +125,7 @@ def log_validation(vae, unet, controlnet, args, accelerator, weight_dtype, step)
     if not args.validation_blur:
         return
 
-    logger.info("Running no-text deblur validation...")
+    logger.info("Running deblur baseline validation...")
     scheduler = UniPCMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
     pipeline = StableDiffusionControlNetPipeline(
         vae=vae,
@@ -377,7 +377,7 @@ def main(args):
         accelerator.init_trackers(args.tracker_project_name, config=tracker_config)
 
     total_batch_size = args.train_batch_size * accelerator.num_processes * args.gradient_accumulation_steps
-    logger.info("***** Running no-text deblur training *****")
+    logger.info("***** Running deblur baseline training *****")
     logger.info(f"  Num examples = {len(train_dataset)}")
     logger.info(f"  Num batches each epoch = {len(train_dataloader)}")
     logger.info(f"  Num Epochs = {args.num_train_epochs}")
@@ -512,7 +512,7 @@ def main(args):
             upload_folder(
                 repo_id=repo_id,
                 folder_path=args.output_dir,
-                commit_message="End of no-text deblur training",
+                commit_message="End of deblur baseline training",
                 ignore_patterns=["step_*", "epoch_*"],
             )
 

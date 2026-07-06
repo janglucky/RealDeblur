@@ -40,7 +40,7 @@ from ..myutils.null_condition import build_null_encoder_hidden_states
 
 class StableDiffusionControlNetPipeline(DiffusionPipeline):
     r"""
-    No-text PASD deblurring pipeline.
+    PASD deblurring baseline pipeline.
 
     Args:
         vae ([`AutoencoderKL`]):
@@ -197,7 +197,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
                 return torch.device(module._hf_hook.execution_device)
         return self.device
 
-    def _encode_no_text_condition(
+    def _encode_null_condition(
         self,
         device,
         batch_size,
@@ -443,7 +443,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
         conditioning_scale: float = 1.0,
     ):
         r"""
-        Run no-text image deblurring.
+        Run image deblurring with the baseline restoration pipeline.
 
         `image` is the blurred image condition. The pipeline always uses a fixed zero cross-attention condition instead
         of tokenizer/CLIP text features.
@@ -461,7 +461,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
         effective_batch_size = batch_size * num_images_per_input
         device = self._execution_device
         controlnet = self.controlnet._orig_mod if is_compiled_module(self.controlnet) else self.controlnet
-        encoder_hidden_states = self._encode_no_text_condition(
+        encoder_hidden_states = self._encode_null_condition(
             device,
             batch_size,
             num_images_per_input,

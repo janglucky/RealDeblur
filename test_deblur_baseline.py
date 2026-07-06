@@ -172,9 +172,9 @@ def main(args, enable_xformers_memory_efficient_attention=True):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--pretrained_model_path", type=str, default="checkpoints/stable-diffusion-v1-5")
-    parser.add_argument("--pasd_model_path", type=str, default="runs/pasd_deblur_no_text")
+    parser.add_argument("--pasd_model_path", type=str, default="runs/deblur_baseline")
     parser.add_argument("--image_path", type=str, required=True)
-    parser.add_argument("--output_dir", type=str, default="output_deblur_no_text")
+    parser.add_argument("--output_dir", type=str, default="output_deblur_baseline")
     parser.add_argument("--mixed_precision", type=str, default="fp16", choices=["no", "fp16", "bf16"])
     parser.add_argument("--conditioning_scale", type=float, default=1.0)
     parser.add_argument("--num_inference_steps", type=int, default=20)

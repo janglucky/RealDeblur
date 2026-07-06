@@ -10,7 +10,7 @@ setup(
     name="realdeblur",
     version="0.0.1",
     url="https://github.com/janglucky/RealDeblur.git",
-    description="No-text PASD baseline for paired image deblurring.",
+    description="PASD baseline for paired image deblurring with the text branch removed.",
     packages=find_packages(),
     install_requires=read_requirements(),
 )
