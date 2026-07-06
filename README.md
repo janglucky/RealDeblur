@@ -103,6 +103,7 @@ bash test_deblur_baseline.sh
 ```
 
 By default, the script searches `CHECKPOINT_DIR=experiments/deblur_baseline` and uses the numerically latest `checkpoint-*` directory.
+If `OUTPUT_DIR` is not set, outputs are written to `OUTPUT_ROOT/<experiment-name>/<checkpoint-name>`, for example `outputs/deblur_baseline/checkpoint-20000`.
 
 Use a specific training step:
 
@@ -118,10 +119,11 @@ Use an explicit checkpoint path:
 PRETRAINED_MODEL=/home/gd09385/models/stable-diffusion-2-base \
 PASD_MODEL=experiments/deblur_baseline/checkpoint-10000 \
 IMAGE_PATH=/home/gd09385/data/test_c/source \
-OUTPUT_DIR=outputs/deblur_baseline \
 MAX_IMAGES=5 \
 bash test_deblur_baseline.sh
 ```
+
+Set `OUTPUT_ROOT=/path/to/results` to change the root directory while keeping the experiment/checkpoint subfolders.
 
 Testing has a startup free-VRAM check. The default is `MIN_FREE_VRAM_MB=8000`; lower it only if you know the checkpoint and image size fit your GPU.
 

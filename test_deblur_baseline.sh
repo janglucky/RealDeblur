@@ -6,6 +6,7 @@ set -e
 : "${CHECKPOINT_DIR:=experiments/deblur_baseline}"
 : "${CHECKPOINT_STEP:=}"
 : "${PASD_MODEL:=}"
+: "${OUTPUT_ROOT:=outputs}"
 : "${OUTPUT_DIR:=}"
 : "${MIXED_PRECISION:=fp16}"
 : "${NUM_INFERENCE_STEPS:=20}"
@@ -59,7 +60,9 @@ if [ -z "${PASD_MODEL}" ]; then
 fi
 
 if [ -z "${OUTPUT_DIR}" ]; then
-  OUTPUT_DIR="outputs/deblur_baseline-$(basename "${PASD_MODEL}")"
+  CHECKPOINT_NAME="$(basename "${PASD_MODEL}")"
+  EXPERIMENT_NAME="$(basename "$(dirname "${PASD_MODEL}")")"
+  OUTPUT_DIR="${OUTPUT_ROOT}/${EXPERIMENT_NAME}/${CHECKPOINT_NAME}"
 fi
 
 if [ ! -d "${PASD_MODEL}/unet" ] || [ ! -d "${PASD_MODEL}/controlnet" ]; then
