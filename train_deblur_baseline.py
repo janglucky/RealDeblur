@@ -400,11 +400,25 @@ def main(args):
             accelerator.print(f"Checkpoint '{args.resume_from_checkpoint}' does not exist. Starting fresh.")
             args.resume_from_checkpoint = None
         else:
+            checkpoint_step = int(path.split("-")[1])
             accelerator.print(f"Resuming from checkpoint {path}")
-            accelerator.load_state(os.path.join(args.output_dir, path))
-            global_step = int(path.split("-")[1])
+            try:
+                accelerator.load_state(os.path.join(args.output_dir, path))
+            except KeyError as exc:
+                if exc.args != ("step",):
+                    raise
+                accelerator.print(
+                    "Checkpoint state does not contain Accelerator.step; "
+                    "continuing after loading model, optimizer, scheduler, and dataloader states."
+                )
+                accelerator.step = checkpoint_step
+            global_step = checkpoint_step
             initial_global_step = global_step
             first_epoch = global_step // num_update_steps_per_epoch
+            if global_step >= args.max_train_steps:
+                accelerator.print(
+                    f"Checkpoint step {global_step} has already reached --max_train_steps={args.max_train_steps}."
+                )
 
     progress_bar = tqdm(
         range(0, args.max_train_steps),

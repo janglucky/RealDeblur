@@ -91,6 +91,7 @@ Useful options:
 - `GRADIENT_CHECKPOINTING=1` reduces VRAM usage.
 - `USE_8BIT_ADAM=1` enables bitsandbytes AdamW if bitsandbytes is installed.
 - `MAX_TRAIN_STEPS=20000` sets the total number of optimizer steps. The script derives the required epoch count from this value.
+- `RESUME_FROM_CHECKPOINT=latest` resumes from the latest checkpoint by default. Set `RESUME_FROM_CHECKPOINT=` to start from scratch.
 - `CHECKPOINTING_STEPS=5000` controls checkpoint frequency.
 - `REPORT_TO=tensorboard` enables TensorBoard logging if TensorBoard is installed. The default is `none`.
 

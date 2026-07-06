@@ -17,6 +17,7 @@ set -e
 : "${DISABLE_CUDNN:=1}"
 : "${GRADIENT_CHECKPOINTING:=1}"
 : "${USE_8BIT_ADAM:=0}"
+: "${RESUME_FROM_CHECKPOINT=latest}"
 
 EXTRA_ARGS=()
 if [ "${DISABLE_CUDNN}" = "1" ]; then
@@ -27,6 +28,9 @@ if [ "${GRADIENT_CHECKPOINTING}" = "1" ]; then
 fi
 if [ "${USE_8BIT_ADAM}" = "1" ]; then
   EXTRA_ARGS+=(--use_8bit_adam)
+fi
+if [ -n "${RESUME_FROM_CHECKPOINT}" ]; then
+  EXTRA_ARGS+=(--resume_from_checkpoint "${RESUME_FROM_CHECKPOINT}")
 fi
 
 accelerate launch train_deblur_baseline.py \
