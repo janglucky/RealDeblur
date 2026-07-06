@@ -102,7 +102,17 @@ Run inference after a checkpoint has `unet/` and `controlnet/` subdirectories:
 bash test_deblur_baseline.sh
 ```
 
-Example with explicit paths:
+By default, the script searches `CHECKPOINT_DIR=experiments/deblur_baseline` and uses the numerically latest `checkpoint-*` directory.
+
+Use a specific training step:
+
+```bash
+CHECKPOINT_DIR=experiments/deblur_baseline \
+CHECKPOINT_STEP=20000 \
+bash test_deblur_baseline.sh
+```
+
+Use an explicit checkpoint path:
 
 ```bash
 PRETRAINED_MODEL=/home/gd09385/models/stable-diffusion-2-base \

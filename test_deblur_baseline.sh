@@ -3,8 +3,10 @@ set -e
 
 : "${IMAGE_PATH:=/home/gd09385/data/test_c/source}"
 : "${PRETRAINED_MODEL:=/home/gd09385/models/stable-diffusion-2-base}"
-: "${PASD_MODEL:=experiments/deblur_baseline/checkpoint-10000}"
-: "${OUTPUT_DIR:=outputs/deblur_baseline}"
+: "${CHECKPOINT_DIR:=experiments/deblur_baseline}"
+: "${CHECKPOINT_STEP:=}"
+: "${PASD_MODEL:=}"
+: "${OUTPUT_DIR:=}"
 : "${MIXED_PRECISION:=fp16}"
 : "${NUM_INFERENCE_STEPS:=20}"
 : "${CONDITIONING_SCALE:=1.0}"
@@ -20,11 +22,54 @@ set -e
 : "${SHOW_PROGRESS:=0}"
 : "${SEED:=}"
 
+if [ -z "${PASD_MODEL}" ]; then
+  if [ -n "${CHECKPOINT_STEP}" ]; then
+    STEP="${CHECKPOINT_STEP#checkpoint-}"
+    if [[ ! "${STEP}" =~ ^[0-9]+$ ]]; then
+      echo "Invalid CHECKPOINT_STEP=${CHECKPOINT_STEP}. Use a number like 20000."
+      exit 1
+    fi
+    PASD_MODEL="${CHECKPOINT_DIR}/checkpoint-${STEP}"
+  else
+    if [ ! -d "${CHECKPOINT_DIR}" ]; then
+      echo "Checkpoint directory does not exist: ${CHECKPOINT_DIR}"
+      exit 1
+    fi
+
+    LATEST_STEP=-1
+    LATEST_CHECKPOINT=""
+    shopt -s nullglob
+    for CHECKPOINT_PATH in "${CHECKPOINT_DIR}"/checkpoint-*; do
+      [ -d "${CHECKPOINT_PATH}" ] || continue
+      CHECKPOINT_NAME="$(basename "${CHECKPOINT_PATH}")"
+      STEP="${CHECKPOINT_NAME#checkpoint-}"
+      if [[ "${STEP}" =~ ^[0-9]+$ ]] && [ "${STEP}" -gt "${LATEST_STEP}" ]; then
+        LATEST_STEP="${STEP}"
+        LATEST_CHECKPOINT="${CHECKPOINT_PATH}"
+      fi
+    done
+    shopt -u nullglob
+
+    if [ -z "${LATEST_CHECKPOINT}" ]; then
+      echo "No checkpoint-* directories found under ${CHECKPOINT_DIR}."
+      exit 1
+    fi
+    PASD_MODEL="${LATEST_CHECKPOINT}"
+  fi
+fi
+
+if [ -z "${OUTPUT_DIR}" ]; then
+  OUTPUT_DIR="outputs/deblur_baseline-$(basename "${PASD_MODEL}")"
+fi
+
 if [ ! -d "${PASD_MODEL}/unet" ] || [ ! -d "${PASD_MODEL}/controlnet" ]; then
   echo "Missing trained model under ${PASD_MODEL}."
   echo "Expected ${PASD_MODEL}/unet and ${PASD_MODEL}/controlnet."
   exit 1
 fi
+
+echo "Using checkpoint: ${PASD_MODEL}"
+echo "Writing outputs to: ${OUTPUT_DIR}"
 
 EXTRA_ARGS=()
 if [ "${DISABLE_CUDNN}" = "1" ]; then
