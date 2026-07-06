@@ -71,20 +71,16 @@ class ControlNetConditioningEmbedding(nn.Module):
         conditioning_channels: int = 3,
         block_out_channels: Tuple[int] = (16, 32, 96, 256),
         return_rgbs: bool = True,
-        use_rrdb: bool = True,
+        use_rrdb: bool = False,
     ):
         super().__init__()
 
         self.return_rgbs = return_rgbs
-        self.use_rrdb = use_rrdb
+        self.use_rrdb = False
+        if use_rrdb:
+            logger.warning("RRDB conditioning is not included in the no-text deblurring baseline; using conv blocks.")
 
         self.conv_in = nn.Conv2d(conditioning_channels, block_out_channels[0], kernel_size=3, padding=1)
-
-        if self.use_rrdb:
-            from basicsr.archs.rrdbnet_arch import RRDB
-            num_rrdb_block = 2
-            layers = (RRDB(block_out_channels[0], block_out_channels[0]) for i in range(num_rrdb_block))
-            self.preprocesser = nn.Sequential(*layers)
 
         self.blocks = nn.ModuleList([])
         self.to_rgbs = nn.ModuleList([])
@@ -105,9 +101,6 @@ class ControlNetConditioningEmbedding(nn.Module):
     def forward(self, conditioning):
         embedding = self.conv_in(conditioning)
         embedding = F.silu(embedding)
-
-        if self.use_rrdb:
-            embedding = self.preprocesser(embedding)
 
         out_rgbs = []
         for i, block in enumerate(self.blocks):

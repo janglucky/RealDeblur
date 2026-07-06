@@ -7,13 +7,10 @@ def read_requirements():
 
 
 setup(
-    name="pasd",
+    name="realdeblur",
     version="0.0.1",
-    url="https://github.com/yangxy/PASD.git",
-    description=(
-        "[ECCV2024] Pixel-Aware Stable Diffusion for Realistic "
-        "Image Super-Resolution and Personalized Stylization"
-    ),
+    url="https://github.com/janglucky/RealDeblur.git",
+    description="No-text PASD baseline for paired image deblurring.",
     packages=find_packages(),
     install_requires=read_requirements(),
 )

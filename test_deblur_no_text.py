@@ -20,13 +20,10 @@ logger = get_logger(__name__, log_level="INFO")
 IMG_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tif", ".tiff")
 
 
-def get_model_classes(use_pasd_light):
-    if use_pasd_light:
-        from pasd.models.pasd_light.controlnet import ControlNetModel
-        from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
-    else:
-        from pasd.models.pasd.controlnet import ControlNetModel
-        from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+def get_model_classes():
+    from pasd.models.pasd.controlnet import ControlNetModel
+    from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+
     return UNet2DConditionModel, ControlNetModel
 
 
@@ -47,7 +44,7 @@ def resize_for_pipeline(image, process_size):
 
 
 def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_attention):
-    UNet2DConditionModel, ControlNetModel = get_model_classes(args.use_pasd_light)
+    UNet2DConditionModel, ControlNetModel = get_model_classes()
 
     scheduler = UniPCMultistepScheduler.from_pretrained(args.pretrained_model_path, subfolder="scheduler")
     vae = AutoencoderKL.from_pretrained(args.pretrained_model_path, subfolder="vae")
@@ -77,14 +74,9 @@ def load_pasd_pipeline(args, accelerator, enable_xformers_memory_efficient_atten
 
     pipeline = StableDiffusionControlNetPipeline(
         vae=vae,
-        text_encoder=None,
-        tokenizer=None,
-        feature_extractor=None,
         unet=unet,
         controlnet=controlnet,
         scheduler=scheduler,
-        safety_checker=None,
-        requires_safety_checker=False,
     )
     pipeline._init_tiled_vae(
         encoder_tile_size=args.encoder_tiled_size,
@@ -157,11 +149,9 @@ def main(args, enable_xformers_memory_efficient_attention=True):
             with torch.autocast(accelerator.device.type, enabled=accelerator.device.type == "cuda"):
                 image = pipeline(
                     args,
-                    prompt=None,
                     image=condition_image,
                     num_inference_steps=args.num_inference_steps,
                     generator=generator,
-                    guidance_scale=args.guidance_scale,
                     conditioning_scale=args.conditioning_scale,
                 ).images[0]
         except Exception as exc:
@@ -186,7 +176,6 @@ if __name__ == "__main__":
     parser.add_argument("--image_path", type=str, required=True)
     parser.add_argument("--output_dir", type=str, default="output_deblur_no_text")
     parser.add_argument("--mixed_precision", type=str, default="fp16", choices=["no", "fp16", "bf16"])
-    parser.add_argument("--guidance_scale", type=float, default=1.0)
     parser.add_argument("--conditioning_scale", type=float, default=1.0)
     parser.add_argument("--num_inference_steps", type=int, default=20)
     parser.add_argument("--process_size", type=int, default=0)
@@ -194,7 +183,6 @@ if __name__ == "__main__":
     parser.add_argument("--encoder_tiled_size", type=int, default=1024)
     parser.add_argument("--latent_tiled_size", type=int, default=320)
     parser.add_argument("--latent_tiled_overlap", type=int, default=8)
-    parser.add_argument("--use_pasd_light", action="store_true")
     parser.add_argument("--init_latent_with_noise", action="store_true")
     parser.add_argument("--added_noise_level", type=int, default=900)
     parser.add_argument("--offset_noise_scale", type=float, default=0.0)

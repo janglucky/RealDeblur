@@ -13,6 +13,7 @@ set -e
 : "${CHECKPOINTING_STEPS:=5000}"
 : "${MIXED_PRECISION:=fp16}"
 : "${DATALOADER_NUM_WORKERS:=8}"
+: "${REPORT_TO:=none}"
 : "${DISABLE_CUDNN:=1}"
 : "${GRADIENT_CHECKPOINTING:=1}"
 : "${USE_8BIT_ADAM:=0}"
@@ -43,4 +44,5 @@ accelerate launch train_deblur_no_text.py \
   --checkpointing_steps="${CHECKPOINTING_STEPS}" \
   --mixed_precision="${MIXED_PRECISION}" \
   --dataloader_num_workers="${DATALOADER_NUM_WORKERS}" \
+  --report_to="${REPORT_TO}" \
   "${EXTRA_ARGS[@]}"

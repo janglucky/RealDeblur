@@ -69,12 +69,11 @@ def parse_args(input_args=None):
     parser.add_argument("--hub_token", type=str, default=None)
     parser.add_argument("--hub_model_id", type=str, default=None)
     parser.add_argument("--allow_tf32", action="store_true")
-    parser.add_argument("--report_to", type=str, default="tensorboard")
+    parser.add_argument("--report_to", type=str, default="none")
     parser.add_argument("--mixed_precision", type=str, default="fp16", choices=["no", "fp16", "bf16"])
     parser.add_argument("--enable_xformers_memory_efficient_attention", action="store_true")
     parser.add_argument("--set_grads_to_none", action="store_true")
     parser.add_argument("--tracker_project_name", type=str, default="pasd_deblur_no_text")
-    parser.add_argument("--use_pasd_light", action="store_true")
     parser.add_argument(
         "--trainable_modules",
         nargs="*",
@@ -104,13 +103,10 @@ def parse_args(input_args=None):
     return args
 
 
-def get_model_classes(use_pasd_light):
-    if use_pasd_light:
-        from pasd.models.pasd_light.controlnet import ControlNetModel
-        from pasd.models.pasd_light.unet_2d_condition import UNet2DConditionModel
-    else:
-        from pasd.models.pasd.controlnet import ControlNetModel
-        from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+def get_model_classes():
+    from pasd.models.pasd.controlnet import ControlNetModel
+    from pasd.models.pasd.unet_2d_condition import UNet2DConditionModel
+
     return UNet2DConditionModel, ControlNetModel
 
 
@@ -133,14 +129,9 @@ def log_validation(vae, unet, controlnet, args, accelerator, weight_dtype, step)
     scheduler = UniPCMultistepScheduler.from_pretrained(args.pretrained_model_name_or_path, subfolder="scheduler")
     pipeline = StableDiffusionControlNetPipeline(
         vae=vae,
-        text_encoder=None,
-        tokenizer=None,
-        feature_extractor=None,
         unet=accelerator.unwrap_model(unet),
         controlnet=accelerator.unwrap_model(controlnet),
         scheduler=scheduler,
-        safety_checker=None,
-        requires_safety_checker=False,
     ).to(accelerator.device)
     pipeline.set_progress_bar_config(disable=True)
     pipeline._init_tiled_vae(
@@ -166,11 +157,9 @@ def log_validation(vae, unet, controlnet, args, accelerator, weight_dtype, step)
             with torch.autocast(accelerator.device.type, enabled=accelerator.device.type == "cuda"):
                 image = pipeline(
                     args,
-                    prompt=None,
                     image=blur_image,
                     num_inference_steps=args.num_inference_steps,
                     generator=generator,
-                    guidance_scale=1.0,
                     conditioning_scale=args.conditioning_scale,
                 ).images[0]
             image = image.resize(original_size, Image.BICUBIC)
@@ -182,7 +171,7 @@ def main(args):
         torch.backends.cudnn.enabled = False
         print("cuDNN is disabled for this run.")
 
-    UNet2DConditionModel, ControlNetModel = get_model_classes(args.use_pasd_light)
+    UNet2DConditionModel, ControlNetModel = get_model_classes()
     log_with = None if args.report_to.lower() in {"none", "no", "disabled"} else args.report_to
 
     accelerator_project_config = ProjectConfiguration(total_limit=args.checkpoints_total_limit)

@@ -1,1 +1,0 @@
-Please put personalized models here. You can download them from [civitai](https://civitai.com/models), [huggingface](https://huggingface.co/models) or any other communities.

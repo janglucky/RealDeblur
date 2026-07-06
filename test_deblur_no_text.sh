@@ -7,7 +7,6 @@ set -e
 : "${OUTPUT_DIR:=outputs/pasd_deblur_no_text}"
 : "${MIXED_PRECISION:=fp16}"
 : "${NUM_INFERENCE_STEPS:=20}"
-: "${GUIDANCE_SCALE:=1.0}"
 : "${CONDITIONING_SCALE:=1.0}"
 : "${PROCESS_SIZE:=0}"
 : "${DECODER_TILED_SIZE:=224}"
@@ -51,7 +50,6 @@ python test_deblur_no_text.py \
   --output_dir="${OUTPUT_DIR}" \
   --mixed_precision="${MIXED_PRECISION}" \
   --num_inference_steps="${NUM_INFERENCE_STEPS}" \
-  --guidance_scale="${GUIDANCE_SCALE}" \
   --conditioning_scale="${CONDITIONING_SCALE}" \
   --process_size="${PROCESS_SIZE}" \
   --decoder_tiled_size="${DECODER_TILED_SIZE}" \

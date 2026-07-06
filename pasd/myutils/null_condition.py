@@ -21,8 +21,7 @@ def build_null_encoder_hidden_states(
     device: torch.device,
     dtype: torch.dtype,
     sequence_length: int = 77,
-    num_images_per_prompt: int = 1,
-    do_classifier_free_guidance: bool = False,
+    num_images_per_input: int = 1,
 ) -> torch.Tensor:
     hidden_size = get_cross_attention_dim(model_or_config)
     encoder_hidden_states = torch.zeros(
@@ -32,8 +31,6 @@ def build_null_encoder_hidden_states(
         device=device,
         dtype=dtype,
     )
-    if num_images_per_prompt > 1:
-        encoder_hidden_states = encoder_hidden_states.repeat_interleave(num_images_per_prompt, dim=0)
-    if do_classifier_free_guidance:
-        encoder_hidden_states = torch.cat([encoder_hidden_states, encoder_hidden_states], dim=0)
+    if num_images_per_input > 1:
+        encoder_hidden_states = encoder_hidden_states.repeat_interleave(num_images_per_input, dim=0)
     return encoder_hidden_states
