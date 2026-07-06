@@ -449,7 +449,7 @@ def main(args):
                     dtype=weight_dtype,
                 )
 
-                controlnet_cond_mid, down_block_res_samples, mid_block_res_sample = controlnet(
+                down_block_res_samples, mid_block_res_sample = controlnet(
                     noisy_latents,
                     timesteps,
                     encoder_hidden_states=encoder_hidden_states,
@@ -473,18 +473,6 @@ def main(args):
                     raise ValueError(f"Unknown prediction type {noise_scheduler.config.prediction_type}")
 
                 loss = F.mse_loss(model_pred.float(), target.float(), reduction="mean")
-                if controlnet_cond_mid is not None:
-                    if isinstance(controlnet_cond_mid, list):
-                        for values in controlnet_cond_mid:
-                            target_image = F.interpolate(
-                                pixel_values,
-                                size=values.shape[-2:],
-                                mode="bilinear",
-                                align_corners=False,
-                            )
-                            loss += F.l1_loss(target_image.float(), values.float(), reduction="mean")
-                    else:
-                        loss += F.l1_loss(pixel_values.float(), controlnet_cond_mid.float(), reduction="mean")
 
                 accelerator.backward(loss)
                 if accelerator.sync_gradients:
