@@ -1,0 +1,30 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Local editor and OS files
+.vscode/
+.idea/
+.DS_Store
+
+# Runtime outputs and training artifacts
+experiments/
+outputs/
+output/
+output_deblur_no_text/
+runs/**/checkpoint-*/
+logs/
+wandb/
+
+# Model weights and optimizer states
+*.bin
+*.ckpt
+*.pt
+*.pth
+*.pkl
+*.safetensors
+
+# Local data
+/data/
+datasets/deblur/
