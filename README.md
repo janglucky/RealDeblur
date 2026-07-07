@@ -13,9 +13,9 @@ Removed from this baseline:
 
 - tokenizer, CLIP text encoder, prompts, captions, textual inversion, and classifier-free text guidance
 - super-resolution, colorization, stylization, SDXL, PASD-light, personalized models, Gradio, annotators, RealESRGAN, webdataset, and placeholder checkpoints
-- auxiliary RGB restoration heads and their extra reconstruction losses
 
 The UNet and ControlNet still need cross-attention tensors for shape compatibility with Stable Diffusion 2-base. The text branch is replaced by a fixed zero-valued cross-attention condition.
+The ControlNet conditioning encoder keeps auxiliary RGB heads supervised with an extra L1 reconstruction loss.
 
 ## Installation
 

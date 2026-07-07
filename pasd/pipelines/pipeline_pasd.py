@@ -511,7 +511,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
                 tile_size, tile_overlap = (args.latent_tiled_size, args.latent_tiled_overlap) if args is not None else (256, 8)
                 if h*w<=tile_size*tile_size: #h<tile_size and w<tile_size: # tiled latent input
                     down_block_res_samples, mid_block_res_sample = [None]*10, None
-                    down_block_res_samples, mid_block_res_sample = self.controlnet(
+                    _, down_block_res_samples, mid_block_res_sample = self.controlnet(
                         controlnet_latent_model_input,
                         t,
                         encoder_hidden_states=encoder_hidden_states,
@@ -582,7 +582,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
                                 img_list_t = torch.cat(img_list, dim=0)
                                 #print(input_list_t.shape, cond_list_t.shape, img_list_t.shape, fg_mask_list_t.shape)
 
-                                down_block_res_samples, mid_block_res_sample = self.controlnet(
+                                _, down_block_res_samples, mid_block_res_sample = self.controlnet(
                                     cond_list_t,
                                     t,
                                     encoder_hidden_states=encoder_hidden_states,

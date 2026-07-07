@@ -51,6 +51,7 @@ class ControlNetOutput(BaseOutput):
             Output can be used to condition the original UNet's middle block activation.
     """
 
+    controlnet_cond_mid: Optional[Union[torch.Tensor, List[torch.Tensor]]]
     down_block_res_samples: Tuple[torch.Tensor]
     mid_block_res_sample: torch.Tensor
 
@@ -70,10 +71,12 @@ class ControlNetConditioningEmbedding(nn.Module):
         conditioning_embedding_channels: int,
         conditioning_channels: int = 3,
         block_out_channels: Tuple[int] = (16, 32, 96, 256),
+        return_rgbs: bool = True,
         use_rrdb: bool = False,
     ):
         super().__init__()
 
+        self.return_rgbs = return_rgbs
         self.use_rrdb = False
         if use_rrdb:
             logger.warning("RRDB conditioning is not included in the deblurring baseline; using conv blocks.")
@@ -81,12 +84,15 @@ class ControlNetConditioningEmbedding(nn.Module):
         self.conv_in = nn.Conv2d(conditioning_channels, block_out_channels[0], kernel_size=3, padding=1)
 
         self.blocks = nn.ModuleList([])
+        self.to_rgbs = nn.ModuleList([])
 
         for i in range(len(block_out_channels) - 1):
             channel_in = block_out_channels[i]
             channel_out = block_out_channels[i + 1]
             self.blocks.append(nn.Conv2d(channel_in, channel_in, kernel_size=3, padding=1))
             self.blocks.append(nn.Conv2d(channel_in, channel_out, kernel_size=3, padding=1, stride=2))
+            if return_rgbs:
+                self.to_rgbs.append(nn.Conv2d(channel_out, 3, kernel_size=3, padding=1))
 
         self.conv_out = zero_module(
             nn.Conv2d(block_out_channels[-1], conditioning_embedding_channels, kernel_size=3, padding=1)
@@ -96,12 +102,15 @@ class ControlNetConditioningEmbedding(nn.Module):
         embedding = self.conv_in(conditioning)
         embedding = F.silu(embedding)
 
+        out_rgbs = []
         for i, block in enumerate(self.blocks):
             embedding = block(embedding)
             embedding = F.silu(embedding)
+            if i % 2 and self.return_rgbs:
+                out_rgbs.append(self.to_rgbs[i // 2](embedding))
 
         embedding = self.conv_out(embedding)
-        return embedding
+        return [embedding, out_rgbs] if self.return_rgbs else embedding
 
 
 class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
@@ -211,6 +220,7 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         conditioning_embedding_out_channels: Optional[Tuple[int]] = (16, 32, 96, 256),
         global_pool_conditions: bool = False,
         addition_embed_type_num_heads=64,
+        return_rgbs: bool = True,
         use_rrdb: bool = False,
     ):
         super().__init__()
@@ -243,6 +253,7 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
             transformer_layers_per_block = [transformer_layers_per_block] * len(down_block_types)
 
         # input
+        self.return_rgbs = return_rgbs
         conv_in_kernel = 3
         conv_in_padding = (conv_in_kernel - 1) // 2
         self.conv_in = nn.Conv2d(
@@ -339,6 +350,7 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
             conditioning_embedding_channels=block_out_channels[0],
             block_out_channels=conditioning_embedding_out_channels,
             conditioning_channels=conditioning_channels,
+            return_rgbs=return_rgbs,
             use_rrdb=use_rrdb,
         )
 
@@ -756,7 +768,11 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         # 2. pre-process
         sample = self.conv_in(sample)
 
-        controlnet_cond = self.controlnet_cond_embedding(controlnet_cond)
+        controlnet_cond_mid = None
+        if self.return_rgbs:
+            controlnet_cond, controlnet_cond_mid = self.controlnet_cond_embedding(controlnet_cond)
+        else:
+            controlnet_cond = self.controlnet_cond_embedding(controlnet_cond)
         sample = sample + controlnet_cond
 
         # 3. down
@@ -830,9 +846,10 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
             mid_block_res_sample = torch.mean(mid_block_res_sample, dim=(2, 3), keepdim=True)
 
         if not return_dict:
-            return (down_block_res_samples, mid_block_res_sample)
+            return (controlnet_cond_mid, down_block_res_samples, mid_block_res_sample)
 
         return ControlNetOutput(
+            controlnet_cond_mid=controlnet_cond_mid,
             down_block_res_samples=down_block_res_samples,
             mid_block_res_sample=mid_block_res_sample,
         )
