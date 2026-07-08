@@ -3,7 +3,7 @@ set -e
 
 : "${IMAGE_PATH:=/home/gd09385/data/test_c/source}"
 : "${PRETRAINED_MODEL:=/home/gd09385/models/stable-diffusion-2-base}"
-: "${CHECKPOINT_DIR:=experiments/deblur_baseline}"
+: "${CHECKPOINT_DIR:=experiments/deblur_baseline_wrgb_sa}"
 : "${CHECKPOINT_STEP:=}"
 : "${PASD_MODEL:=}"
 : "${OUTPUT_ROOT:=outputs}"
@@ -22,6 +22,8 @@ set -e
 : "${MIN_FREE_VRAM_MB:=8000}"
 : "${SHOW_PROGRESS:=0}"
 : "${SEED:=}"
+: "${COLOR_FIX_TYPE:=wavelet}"
+: "${USE_NULL_PROMPT:=0}"
 
 if [ -z "${PASD_MODEL}" ]; then
   if [ -n "${CHECKPOINT_STEP}" ]; then
@@ -73,6 +75,12 @@ fi
 
 echo "Using checkpoint: ${PASD_MODEL}"
 echo "Writing outputs to: ${OUTPUT_DIR}"
+echo "Color fix: ${COLOR_FIX_TYPE}"
+if [ "${USE_NULL_PROMPT}" = "1" ]; then
+  echo "Attention condition: zero null prompt"
+else
+  echo "Attention condition: self-conditioned hidden states"
+fi
 
 EXTRA_ARGS=()
 if [ "${DISABLE_CUDNN}" = "1" ]; then
@@ -90,6 +98,9 @@ fi
 if [ -n "${SEED}" ]; then
   EXTRA_ARGS+=(--seed "${SEED}")
 fi
+if [ "${USE_NULL_PROMPT}" = "1" ]; then
+  EXTRA_ARGS+=(--use_null_prompt)
+fi
 
 python test_deblur_baseline.py \
   --pretrained_model_path="${PRETRAINED_MODEL}" \
@@ -105,4 +116,5 @@ python test_deblur_baseline.py \
   --latent_tiled_size="${LATENT_TILED_SIZE}" \
   --latent_tiled_overlap="${LATENT_TILED_OVERLAP}" \
   --min_free_vram_mb="${MIN_FREE_VRAM_MB}" \
+  --color_fix_type="${COLOR_FIX_TYPE}" \
   "${EXTRA_ARGS[@]}"

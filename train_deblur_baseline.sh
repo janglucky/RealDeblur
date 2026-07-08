@@ -4,12 +4,12 @@ set -e
 : "${TRAIN_BLUR_DIR:=/home/gd09385/data/test_c_sub/source}"
 : "${TRAIN_SHARP_DIR:=/home/gd09385/data/test_c_sub/target}"
 : "${PRETRAINED_MODEL:=/home/gd09385/models/stable-diffusion-2-base}"
-: "${OUTPUT_DIR:=experiments/deblur_baseline}"
+: "${OUTPUT_DIR:=experiments/deblur_baseline_wrgb_sa}"
 : "${RESOLUTION:=512}"
 : "${LEARNING_RATE:=5e-5}"
-: "${GRADIENT_ACCUMULATION_STEPS:=4}"
+: "${GRADIENT_ACCUMULATION_STEPS:=2}"
 : "${TRAIN_BATCH_SIZE:=1}"
-: "${MAX_TRAIN_STEPS:=20000}"
+: "${MAX_TRAIN_STEPS:=200000}"
 : "${CHECKPOINTING_STEPS:=5000}"
 : "${MIXED_PRECISION:=fp16}"
 : "${DATALOADER_NUM_WORKERS:=8}"
@@ -18,6 +18,7 @@ set -e
 : "${GRADIENT_CHECKPOINTING:=1}"
 : "${USE_8BIT_ADAM:=0}"
 : "${RESUME_FROM_CHECKPOINT=latest}"
+: "${USE_NULL_PROMPT:=0}"
 
 EXTRA_ARGS=()
 if [ "${DISABLE_CUDNN}" = "1" ]; then
@@ -31,6 +32,15 @@ if [ "${USE_8BIT_ADAM}" = "1" ]; then
 fi
 if [ -n "${RESUME_FROM_CHECKPOINT}" ]; then
   EXTRA_ARGS+=(--resume_from_checkpoint "${RESUME_FROM_CHECKPOINT}")
+fi
+if [ "${USE_NULL_PROMPT}" = "1" ]; then
+  EXTRA_ARGS+=(--use_null_prompt)
+fi
+
+if [ "${USE_NULL_PROMPT}" = "1" ]; then
+  echo "Attention condition: zero null prompt"
+else
+  echo "Attention condition: self-conditioned hidden states"
 fi
 
 accelerate launch train_deblur_baseline.py \

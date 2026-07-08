@@ -14,8 +14,9 @@ Removed from this baseline:
 - tokenizer, CLIP text encoder, prompts, captions, textual inversion, and classifier-free text guidance
 - super-resolution, colorization, stylization, SDXL, PASD-light, personalized models, Gradio, annotators, RealESRGAN, webdataset, and placeholder checkpoints
 
-The UNet and ControlNet still need cross-attention tensors for shape compatibility with Stable Diffusion 2-base. The text branch is replaced by a fixed zero-valued cross-attention condition.
+The UNet and ControlNet still keep cross-attention modules for shape compatibility with Stable Diffusion 2-base, but the default deblurring path does not pass text features.
 The ControlNet conditioning encoder keeps auxiliary RGB heads supervised with an extra L1 reconstruction loss.
+By default, inference and training no longer pass a zero text/null prompt tensor. When `encoder_hidden_states=None`, the text cross-attention path is replaced by self-conditioned attention: the current feature map is rearranged from `B C H W` to `B (H W) C` and used as the cross-attention condition. Set `USE_NULL_PROMPT=1` to restore the old zero-null-prompt behavior.
 
 ## Installation
 
@@ -90,6 +91,7 @@ Useful options:
 - `DISABLE_CUDNN=1` disables cuDNN. Keep this on if the machine reports `CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH`.
 - `GRADIENT_CHECKPOINTING=1` reduces VRAM usage.
 - `USE_8BIT_ADAM=1` enables bitsandbytes AdamW if bitsandbytes is installed.
+- `USE_NULL_PROMPT=1` restores the old zero-null-prompt conditioning. The default uses self-conditioned hidden states.
 - `MAX_TRAIN_STEPS=20000` sets the total number of optimizer steps. The script derives the required epoch count from this value.
 - `RESUME_FROM_CHECKPOINT=latest` resumes from the latest checkpoint by default. Set `RESUME_FROM_CHECKPOINT=` to start from scratch.
 - `CHECKPOINTING_STEPS=5000` controls checkpoint frequency.
@@ -129,6 +131,22 @@ bash test_deblur_baseline.sh
 Set `OUTPUT_ROOT=/path/to/results` to change the root directory while keeping the experiment/checkpoint subfolders.
 
 Testing has a startup free-VRAM check. The default is `MIN_FREE_VRAM_MB=8000`; lower it only if you know the checkpoint and image size fit your GPU.
+The test script applies `COLOR_FIX_TYPE=wavelet` by default to reduce color drift against the blurry input, using the same wavelet reconstruction color fix as PASD. Set `COLOR_FIX_TYPE=none` to disable it, or `COLOR_FIX_TYPE=adain` to use PASD's AdaIN color fix.
+Set `USE_NULL_PROMPT=1` during testing only if you want to compare with the old zero-null-prompt behavior.
+
+## Evaluation
+
+Evaluate restored images against sharp ground truth:
+
+```bash
+RESTORED_DIR=outputs/my_experiment/checkpoint-20000 \
+GT_DIR=/home/gd09385/data/test_c/target \
+bash evaluate_deblur_metrics.sh
+```
+
+The script reports PSNR, SSIM, NIQE, LPIPS, DISTS, MUSIQ, MANIQA, and CLIPIQA. PSNR/SSIM/NIQE use BasicSR; the learned perceptual and no-reference IQA metrics use PyIQA. Results are written to `metrics.csv` and `metrics_summary.json` under the restored-image directory by default.
+Ground truth matching defaults to `GT_MATCH=auto`: it uses filename matching when all names align, otherwise falls back to sorted-order matching when the image counts allow it. Use `GT_MATCH=name` or `GT_MATCH=order` to force one mode.
+Evaluation disables cuDNN by default with `DISABLE_CUDNN=1` to avoid local `CUDNN_STATUS_SUBLIBRARY_VERSION_MISMATCH` errors. Set `DISABLE_CUDNN=0` only on a clean CUDA/cuDNN install.
 
 ## GPU Notes
 
@@ -140,6 +158,7 @@ Testing has a startup free-VRAM check. The default is `MIN_FREE_VRAM_MB=8000`; l
 
 - `train_deblur_baseline.py`: paired deblurring training
 - `test_deblur_baseline.py`: deblurring baseline inference
+- `evaluate_deblur_metrics.py`: image quality metric evaluation
 - `pasd/dataloader/deblur.py`: paired blur/sharp dataset
 - `pasd/pipelines/pipeline_pasd.py`: text-branch-removed SD + ControlNet pipeline
-- `pasd/myutils/null_condition.py`: zero cross-attention condition helper
+- `pasd/myutils/null_condition.py`: optional zero-null-prompt condition helper

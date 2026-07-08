@@ -24,12 +24,8 @@ from diffusers.utils import BaseOutput, logging
 from diffusers.models.attention_processor import AttentionProcessor, AttnProcessor
 from diffusers.models.embeddings import TextImageProjection, TextImageTimeEmbedding, TextTimeEmbedding, TimestepEmbedding, Timesteps
 from diffusers.models.modeling_utils import ModelMixin
-from diffusers.models.unets.unet_2d_blocks import (
-    CrossAttnDownBlock2D,
-    DownBlock2D,
-    UNetMidBlock2DCrossAttn,
-    get_down_block,
-)
+from diffusers.models.unets.unet_2d_blocks import DownBlock2D
+from .unet_2d_blocks import CrossAttnDownBlock2D, UNetMidBlock2DCrossAttn, get_down_block
 from .unet_2d_condition import UNet2DConditionModel
 
 
@@ -643,7 +639,7 @@ class ControlNetModel(ModelMixin, ConfigMixin, FromOriginalModelMixin):
         self,
         sample: torch.FloatTensor,
         timestep: Union[torch.Tensor, float, int],
-        encoder_hidden_states: torch.Tensor,
+        encoder_hidden_states: Optional[torch.Tensor],
         controlnet_cond: torch.FloatTensor,
         fg_mask: Optional[torch.FloatTensor] = None,
         conditioning_scale: float = 1.0,

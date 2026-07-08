@@ -3,9 +3,11 @@ accelerate==0.33.0
 huggingface-hub==0.24.6
 xformers; sys_platform != 'darwin'
 einops
+basicsr
 numpy
 packaging
 Pillow
+pyiqa
 safetensors
 torch
 torchvision

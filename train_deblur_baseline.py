@@ -77,7 +77,7 @@ def parse_args(input_args=None):
         "--trainable_modules",
         nargs="*",
         type=str,
-        default=["pixel_attentions", "norm2_plus", "attn2_plus", "proj_in_plus"],
+        default=["self_linear", "pixel_attentions", "norm2_plus", "attn2_plus", "proj_in_plus"],
     )
     parser.add_argument("--validation_blur", type=str, default=None, nargs="*")
     parser.add_argument("--validation_steps", type=int, default=1000)
@@ -92,6 +92,7 @@ def parse_args(input_args=None):
     parser.add_argument("--added_noise_level", type=int, default=900)
     parser.add_argument("--offset_noise_scale", type=float, default=0.0)
     parser.add_argument("--disable_cudnn", action="store_true")
+    parser.add_argument("--use_null_prompt", action="store_true")
 
     args = parser.parse_args(input_args) if input_args is not None else parser.parse_args()
 
@@ -109,10 +110,24 @@ def get_model_classes():
     return UNet2DConditionModel, ControlNetModel
 
 
+def from_pretrained_self_linear_compatible(model_cls, model_path, subfolder=None):
+    kwargs = {}
+    if subfolder is not None:
+        kwargs["subfolder"] = subfolder
+    try:
+        return model_cls.from_pretrained(model_path, **kwargs)
+    except ValueError as exc:
+        message = str(exc)
+        if "self_linear" not in message or "keys are missing" not in message:
+            raise
+        kwargs["low_cpu_mem_usage"] = False
+        return model_cls.from_pretrained(model_path, **kwargs)
+
+
 def load_controlnet(ControlNetModel, model_path):
     if os.path.isdir(os.path.join(model_path, "controlnet")):
-        return ControlNetModel.from_pretrained(model_path, subfolder="controlnet")
-    return ControlNetModel.from_pretrained(model_path)
+        return from_pretrained_self_linear_compatible(ControlNetModel, model_path, subfolder="controlnet")
+    return from_pretrained_self_linear_compatible(ControlNetModel, model_path)
 
 
 def save_trainable_models(unet, controlnet, output_dir):
@@ -241,9 +256,17 @@ def main(args):
                 model = models.pop()
                 unwrapped_model = accelerator.unwrap_model(model)
                 if isinstance(unwrapped_model, UNet2DConditionModel):
-                    load_model = UNet2DConditionModel.from_pretrained(input_dir, subfolder="unet")
+                    load_model = from_pretrained_self_linear_compatible(
+                        UNet2DConditionModel,
+                        input_dir,
+                        subfolder="unet",
+                    )
                 elif isinstance(unwrapped_model, ControlNetModel):
-                    load_model = ControlNetModel.from_pretrained(input_dir, subfolder="controlnet")
+                    load_model = from_pretrained_self_linear_compatible(
+                        ControlNetModel,
+                        input_dir,
+                        subfolder="controlnet",
+                    )
                 else:
                     continue
 
@@ -453,12 +476,14 @@ def main(args):
                     device=latents.device,
                 ).long()
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
-                encoder_hidden_states = build_null_encoder_hidden_states(
-                    cross_attention_dim,
-                    batch_size=bsz,
-                    device=latents.device,
-                    dtype=weight_dtype,
-                )
+                encoder_hidden_states = None
+                if args.use_null_prompt:
+                    encoder_hidden_states = build_null_encoder_hidden_states(
+                        cross_attention_dim,
+                        batch_size=bsz,
+                        device=latents.device,
+                        dtype=weight_dtype,
+                    )
 
                 controlnet_cond_mid, down_block_res_samples, mid_block_res_sample = controlnet(
                     noisy_latents,

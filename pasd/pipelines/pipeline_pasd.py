@@ -53,8 +53,8 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
             Scheduler used with `unet` to denoise the encoded image latents.
 
     This repository removes the tokenizer, CLIP text encoder, prompt handling, and textual inversion paths. The UNet
-    and ControlNet still receive a zero-valued cross-attention tensor so the Stable Diffusion architecture stays shape
-    compatible with SD2-base checkpoints.
+    and ControlNet keep cross-attention modules for SD2-base checkpoint compatibility. By default this baseline passes
+    `encoder_hidden_states=None`, so the model uses self-conditioned hidden states instead of a zero text tensor.
     """
 
     def __init__(
@@ -445,8 +445,8 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
         r"""
         Run image deblurring with the baseline restoration pipeline.
 
-        `image` is the blurred image condition. The pipeline always uses a fixed zero cross-attention condition instead
-        of tokenizer/CLIP text features.
+        `image` is the blurred image condition. The pipeline uses self-conditioned hidden states by default instead of
+        tokenizer/CLIP text features; `args.use_null_prompt` restores the old zero-null-prompt condition.
         """
         height, width = self._default_height_width(height, width, image)
         self.check_inputs(
@@ -461,11 +461,14 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
         effective_batch_size = batch_size * num_images_per_input
         device = self._execution_device
         controlnet = self.controlnet._orig_mod if is_compiled_module(self.controlnet) else self.controlnet
-        encoder_hidden_states = self._encode_null_condition(
-            device,
-            batch_size,
-            num_images_per_input,
-        )
+        if bool(getattr(args, "use_null_prompt", False)):
+            encoder_hidden_states = self._encode_null_condition(
+                device,
+                batch_size,
+                num_images_per_input,
+            )
+        else:
+            encoder_hidden_states = None
 
         image = self.prepare_image(
             image=image,
@@ -490,7 +493,7 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
             num_channels_latents,
             height,
             width,
-            encoder_hidden_states.dtype,
+            encoder_hidden_states.dtype if encoder_hidden_states is not None else controlnet.dtype,
             device,
             generator,
             latents,
@@ -637,7 +640,8 @@ class StableDiffusionControlNetPipeline(DiffusionPipeline):
                     noise_pred /= contributors
 
                 # compute the previous noisy sample x_t -> x_t-1
-                latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0].to(encoder_hidden_states.dtype)
+                latent_dtype = encoder_hidden_states.dtype if encoder_hidden_states is not None else controlnet.dtype
+                latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0].to(latent_dtype)
 
                 # call the callback, if provided
                 if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
